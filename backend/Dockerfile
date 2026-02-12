@@ -1,20 +1,21 @@
-# Multi-stage build for production
-FROM node:18-alpine AS builder
-
+# Base stage
+FROM node:18-alpine AS base
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Development stage
+FROM base AS dev
+RUN npm install
+COPY . .
+CMD ["npm", "run", "dev"]
 
-# Copy source code
+# Builder stage for production
+FROM base AS builder
+RUN npm ci --only=production
 COPY . .
 
 # Production stage
-FROM node:18-alpine
-
+FROM node:18-alpine AS production
 WORKDIR /app
 
 # Install dumb-init for proper signal handling
