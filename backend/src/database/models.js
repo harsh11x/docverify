@@ -60,6 +60,14 @@ const Organization = sequelize.define('Organization', {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
         field: 'is_active'
+    },
+    status: {
+        type: DataTypes.STRING(50),
+        defaultValue: 'pending'
+    },
+    status: {
+        type: DataTypes.STRING(50),
+        defaultValue: 'pending'
     }
 }, {
     tableName: 'organizations',

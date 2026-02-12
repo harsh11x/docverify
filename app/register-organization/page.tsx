@@ -79,7 +79,7 @@ export default function RegisterOrganization() {
                                     onClick={() => (window.location.href = "/dashboard/org")}
                                     className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
                                 >
-                                    Go to Dashboard
+                                    Go to Organization Dashboard
                                 </button>
                             </div>
                         </div>

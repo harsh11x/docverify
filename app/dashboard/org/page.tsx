@@ -1,9 +1,66 @@
 import { mockOrganizations } from "@/lib/mock-data"
-import { Building2, CheckCircle2, Clock, Database } from "lucide-react"
+import { Building2, CheckCircle2, Clock, Database, AlertCircle, XCircle } from "lucide-react"
 import { HashDisplay } from "@/components/ui/hash-display"
 
 export default function OrganizationDashboard() {
+    // In a real app, fetch the logged-in organization
+    // For demo, we'll check layout/context or just use the mock logic
+    // Let's assume we are viewing the second org which is pending for demonstration if needed, 
+    // or keep using org[0] but user can toggle for checking. 
+    // For now, let's use the first one but make sure it has a status
     const org = mockOrganizations[0]
+
+    if (org.status === 'pending') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mb-6">
+                    <Clock className="w-10 h-10 text-yellow-500" />
+                </div>
+                <h1 className="text-3xl font-bold mb-4">Verification In Progress</h1>
+                <p className="text-xl text-muted-foreground max-w-2xl mb-8">
+                    Your organization registration is currently under review by the governance board.
+                    This process typically takes 24-48 hours.
+                </p>
+                <div className="bg-card border border-border rounded-lg p-6 max-w-md w-full text-left">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-primary" />
+                        Next Steps
+                    </h3>
+                    <ul className="space-y-3 text-sm text-muted-foreground">
+                        <li className="flex gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">1</span>
+                            Admin reviews your registration details
+                        </li>
+                        <li className="flex gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">2</span>
+                            Identity verification via smart contract
+                        </li>
+                        <li className="flex gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">3</span>
+                            Access granted to dashboard upon approval
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        )
+    }
+
+    if (org.status === 'rejected') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                    <XCircle className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-bold mb-4">Registration Rejected</h1>
+                <p className="text-xl text-muted-foreground max-w-2xl mb-8">
+                    Your organization registration could not be verified and has been rejected by the governance board.
+                </p>
+                <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                    Contact Support
+                </button>
+            </div>
+        )
+    }
 
     const stats = [
         {
@@ -146,8 +203,8 @@ export default function OrganizationDashboard() {
                                     <td className="py-3 px-4">
                                         <span
                                             className={`px-2 py-1 rounded-full text-xs font-medium ${cert.syncStatus === "synced"
-                                                    ? "bg-verification-verified/20 text-verification-verified"
-                                                    : "bg-verification-pending/20 text-verification-pending"
+                                                ? "bg-verification-verified/20 text-verification-verified"
+                                                : "bg-verification-pending/20 text-verification-pending"
                                                 }`}
                                         >
                                             {cert.syncStatus}

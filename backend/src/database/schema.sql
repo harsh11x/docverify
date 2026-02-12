@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     metadata TEXT,
     registration_timestamp BIGINT NOT NULL,
     is_active BOOLEAN DEFAULT true,
+    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'verified', 'rejected'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

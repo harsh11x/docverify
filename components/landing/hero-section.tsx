@@ -3,8 +3,12 @@
 import Link from "next/link"
 import { WalletConnect } from "../wallet-connect"
 import { ArrowRight, Shield } from "lucide-react"
+import { useState } from "react"
+import { JoinDialog } from "@/components/auth/join-dialog"
 
 export function HeroSection() {
+    const [isJoinOpen, setIsJoinOpen] = useState(false)
+
     return (
         <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
             {/* Animated background */}
@@ -36,13 +40,17 @@ export function HeroSection() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <WalletConnect />
-                    <Link
-                        href="/register-organization"
+                    <button
+                        onClick={() => setIsJoinOpen(true)}
                         className="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-border hover:bg-accent transition-colors font-medium"
                     >
-                        Register Organization
+                        Join Now
                         <ArrowRight className="h-4 w-4" />
-                    </Link>
+                    </button>
+                    <JoinDialog
+                        isOpen={isJoinOpen}
+                        onClose={() => setIsJoinOpen(false)}
+                    />
                 </div>
 
                 <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">

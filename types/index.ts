@@ -17,12 +17,14 @@ export interface Organization {
     id: string
     name: string
     type: OrganizationType
+    subtype?: string
     walletAddress: string
     registrationId: string
     blockchainHash: string
     smartContractAddress: string
     registeredAt: Date
     isActive: boolean
+    status: "pending" | "verified" | "rejected"
 }
 
 export interface Document {

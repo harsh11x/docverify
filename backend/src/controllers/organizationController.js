@@ -38,7 +38,8 @@ class OrganizationController {
                 name,
                 metadata,
                 registrationTimestamp: Date.now(),
-                isActive: true
+                isActive: true,
+                status: 'pending'
             });
 
             res.status(201).json({
@@ -197,6 +198,83 @@ class OrganizationController {
 
         } catch (error) {
             logger.error('Failed to get organization stats:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+    /**
+     * Get pending organizations
+     * GET /api/organizations/pending
+     */
+    async getPendingOrganizations(req, res) {
+        try {
+            const organizations = await db.Organization.findAll({
+                where: { status: 'pending' },
+                order: [['createdAt', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: organizations
+            });
+        } catch (error) {
+            logger.error('Failed to get pending organizations:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Approve organization
+     * PUT /api/organizations/:id/approve
+     */
+    async approveOrganization(req, res) {
+        try {
+            const { id } = req.params;
+
+            await db.Organization.update(
+                { status: 'verified', isActive: true },
+                { where: { orgId: id } }
+            );
+
+            // TODO: Emit event or update blockchain state if necessary
+
+            res.status(200).json({
+                success: true,
+                message: 'Organization approved successfully'
+            });
+        } catch (error) {
+            logger.error('Failed to approve organization:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Reject organization
+     * PUT /api/organizations/:id/reject
+     */
+    async rejectOrganization(req, res) {
+        try {
+            const { id } = req.params;
+
+            await db.Organization.update(
+                { status: 'rejected', isActive: false },
+                { where: { orgId: id } }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: 'Organization rejected'
+            });
+        } catch (error) {
+            logger.error('Failed to reject organization:', error);
             res.status(500).json({
                 success: false,
                 error: error.message
