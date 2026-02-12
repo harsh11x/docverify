@@ -1,0 +1,193 @@
+---
+# Fabric Network Configuration for Document Verification Platform
+
+name: "document-verification-network"
+version: "1.0.0"
+description: "Hyperledger Fabric network for decentralized document verification"
+
+# Client configuration
+client:
+  organization: Org1
+  logging:
+    level: info
+  
+  # Peer configuration
+  peer:
+    timeout:
+      connection: 10s
+      response: 180s
+      discovery:
+        greylistExpiry: 10s
+  
+  # Event hub configuration
+  eventService:
+    timeout:
+      registrationResponse: 3s
+  
+  # Orderer configuration
+  orderer:
+    timeout:
+      connection: 15s
+      response: 15s
+  
+  # Global configuration
+  global:
+    timeout:
+      query: 180s
+      execute: 180s
+    cache:
+      connectionIdle: 30s
+      eventServiceIdle: 2m
+      channelConfig: 30m
+      channelMembership: 30s
+      discovery: 10s
+      selection: 10m
+
+# Channels configuration
+channels:
+  verification-channel:
+    orderers:
+      - orderer.example.com
+    
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      
+      peer1.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      
+      peer1.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+    
+    policies:
+      queryChannelConfig:
+        minResponses: 1
+        maxTargets: 1
+        retryOpts:
+          attempts: 5
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+      
+      discovery:
+        maxTargets: 2
+        retryOpts:
+          attempts: 4
+          initialBackoff: 500ms
+          maxBackoff: 5s
+          backoffFactor: 2.0
+      
+      eventService:
+        resolverStrategy: PreferOrg
+        balancer: Random
+        blockHeightLagThreshold: 5
+        reconnectBlockHeightLagThreshold: 10
+        peerMonitorPeriod: 5s
+
+# Organizations configuration
+organizations:
+  Org1:
+    mspid: Org1MSP
+    cryptoPath: /tmp/crypto-config/peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+    peers:
+      - peer0.org1.example.com
+      - peer1.org1.example.com
+    certificateAuthorities:
+      - ca.org1.example.com
+  
+  Org2:
+    mspid: Org2MSP
+    cryptoPath: /tmp/crypto-config/peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+    peers:
+      - peer0.org2.example.com
+      - peer1.org2.example.com
+    certificateAuthorities:
+      - ca.org2.example.com
+
+# Orderers configuration
+orderers:
+  orderer.example.com:
+    url: grpcs://localhost:7050
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      hostnameOverride: orderer.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: /tmp/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt
+
+# Peers configuration
+peers:
+  peer0.org1.example.com:
+    url: grpcs://localhost:7051
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      hostnameOverride: peer0.org1.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+  
+  peer1.org1.example.com:
+    url: grpcs://localhost:8051
+    grpcOptions:
+      ssl-target-name-override: peer1.org1.example.com
+      hostnameOverride: peer1.org1.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt
+  
+  peer0.org2.example.com:
+    url: grpcs://localhost:9051
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+      hostnameOverride: peer0.org2.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+  
+  peer1.org2.example.com:
+    url: grpcs://localhost:10051
+    grpcOptions:
+      ssl-target-name-override: peer1.org2.example.com
+      hostnameOverride: peer1.org2.example.com
+      grpc.keepalive_time_ms: 600000
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls/ca.crt
+
+# Certificate Authorities configuration
+certificateAuthorities:
+  ca.org1.example.com:
+    url: https://localhost:7054
+    caName: ca-org1
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem
+    httpOptions:
+      verify: false
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+  
+  ca.org2.example.com:
+    url: https://localhost:8054
+    caName: ca-org2
+    tlsCACerts:
+      path: /tmp/crypto-config/peerOrganizations/org2.example.com/ca/ca.org2.example.com-cert.pem
+    httpOptions:
+      verify: false
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw

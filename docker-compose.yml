@@ -1,0 +1,175 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: docverify-postgres
+    environment:
+      POSTGRES_DB: docverify
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - docverify-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # IPFS Node
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: docverify-ipfs
+    ports:
+      - "4001:4001" # P2P
+      - "5001:5001" # API
+      - "8080:8080" # Gateway
+    volumes:
+      - ipfs_data:/data/ipfs
+    networks:
+      - docverify-network
+    healthcheck:
+      test: ["CMD-SHELL", "ipfs id"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis (for rate limiting and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: docverify-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - docverify-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ganache (Local Ethereum for development)
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: docverify-ganache
+    ports:
+      - "8545:8545"
+    command: >
+      --mnemonic "test test test test test test test test test test test junk"
+      --networkId 1337
+      --chainId 1337
+      --accounts 10
+      --defaultBalanceEther 1000
+    networks:
+      - docverify-network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docverify-backend
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: docverify
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      IPFS_HOST: ipfs
+      IPFS_PORT: 5001
+      IPFS_PROTOCOL: http
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ETHEREUM_RPC_URL: http://ganache:8545
+      ETHEREUM_NETWORK: development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ipfs:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ganache:
+        condition: service_started
+    networks:
+      - docverify-network
+    command: npm run dev
+
+  # Fabric Orderer (for Hyperledger Fabric)
+  orderer:
+    image: hyperledger/fabric-orderer:2.5
+    container_name: docverify-orderer
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
+      - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
+    ports:
+      - "7050:7050"
+    volumes:
+      - ./fabric/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+      - ./fabric/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls:/var/hyperledger/orderer/tls
+      - ./fabric/channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+    networks:
+      - docverify-network
+
+  # Fabric Peer0 Org1
+  peer0-org1:
+    image: hyperledger/fabric-peer:2.5
+    container_name: docverify-peer0-org1
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer0.org1.example.com
+      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org1.example.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
+      - CORE_PEER_LOCALMSPID=Org1MSP
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+    ports:
+      - "7051:7051"
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./fabric/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls:/etc/hyperledger/fabric/tls
+    depends_on:
+      - orderer
+    networks:
+      - docverify-network
+
+networks:
+  docverify-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  ipfs_data:
+  redis_data:

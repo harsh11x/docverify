@@ -1,0 +1,19 @@
+{
+    "name": "certificate-chaincode",
+    "version": "1.0.0",
+    "description": "Hyperledger Fabric chaincode for certificate verification",
+    "main": "index.js",
+    "scripts": {
+        "start": "fabric-chaincode-node start",
+        "test": "mocha test/**/*.js"
+    },
+    "dependencies": {
+        "fabric-contract-api": "^2.5.0",
+        "fabric-shim": "^2.5.0"
+    },
+    "devDependencies": {
+        "chai": "^4.3.10",
+        "mocha": "^10.2.0",
+        "sinon": "^17.0.1"
+    }
+}

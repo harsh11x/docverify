@@ -1,0 +1,144 @@
+const verificationService = require('../services/verificationService');
+const logger = require('../utils/logger');
+
+class PublicVerificationController {
+    /**
+     * Public verification endpoint
+     * POST /api/verify
+     */
+    async verify(req, res) {
+        try {
+            const { documentHash } = req.body;
+
+            if (!documentHash) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Document hash is required'
+                });
+            }
+
+            logger.info(`Public verification request for hash: ${documentHash}`);
+
+            const result = await verificationService.publicVerify(documentHash);
+
+            res.status(200).json({
+                success: true,
+                verified: result.verified,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Public verification failed:', error);
+            res.status(500).json({
+                success: false,
+                verified: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Verify by IPFS CID
+     * POST /api/verify/cid
+     */
+    async verifyByCID(req, res) {
+        try {
+            const { ipfsCID } = req.body;
+
+            if (!ipfsCID) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'IPFS CID is required'
+                });
+            }
+
+            // Find verification by CID
+            const db = require('../database/models');
+            const verification = await db.Verification.findOne({
+                where: { ipfsCid: ipfsCID }
+            });
+
+            if (!verification) {
+                return res.status(404).json({
+                    success: false,
+                    verified: false,
+                    error: 'No verification found for this CID'
+                });
+            }
+
+            // Get full verification details
+            const result = await verificationService.publicVerify(verification.documentHash);
+
+            res.status(200).json({
+                success: true,
+                verified: result.verified,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('CID verification failed:', error);
+            res.status(500).json({
+                success: false,
+                verified: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Bulk verification
+     * POST /api/verify/bulk
+     */
+    async bulkVerify(req, res) {
+        try {
+            const { documentHashes } = req.body;
+
+            if (!Array.isArray(documentHashes) || documentHashes.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Document hashes array is required'
+                });
+            }
+
+            if (documentHashes.length > 100) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Maximum 100 hashes per request'
+                });
+            }
+
+            const results = await Promise.all(
+                documentHashes.map(async (hash) => {
+                    try {
+                        const result = await verificationService.publicVerify(hash);
+                        return {
+                            documentHash: hash,
+                            verified: result.verified,
+                            ...result
+                        };
+                    } catch (error) {
+                        return {
+                            documentHash: hash,
+                            verified: false,
+                            error: error.message
+                        };
+                    }
+                })
+            );
+
+            res.status(200).json({
+                success: true,
+                data: results
+            });
+
+        } catch (error) {
+            logger.error('Bulk verification failed:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+}
+
+module.exports = new PublicVerificationController();
