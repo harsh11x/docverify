@@ -28,18 +28,21 @@ export interface Organization {
 }
 
 export interface Document {
-    id: string
+    id?: string
     hash: string
     ipfsCid: string
-    fileName: string
-    fileSize: number
-    uploadedBy: string
+    transactionHash?: string
+    blockNumber?: number
+    timestamp: number | string | Date
     organizationId?: string
     organizationName?: string
+    certificateId?: string
+    holderName?: string
+    fileName?: string
+    fileSize?: number
+    uploadedBy?: string
+    metadata?: Record<string, any>
     status: VerificationStatus
-    blockNumber?: number
-    transactionHash?: string
-    timestamp: Date
 }
 
 export interface Transaction {

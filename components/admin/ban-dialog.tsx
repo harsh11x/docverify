@@ -8,45 +8,45 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover"
 import { useToast } from "@/components/ui/use-toast"
 
 interface BanDialogProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    organizationId: string
-    organizationName: string
-    onBanComplete: () => void
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  organizationId: string
+  organizationName: string
+  onBanComplete: () => void
 }
 
 export function BanDialog({
-    open,
-    onOpenChange,
-    organizationId,
-    organizationName,
-    onBanComplete,
+  open,
+  onOpenChange,
+  organizationId,
+  organizationName,
+  onBanComplete,
 }: BanDialogProps) {
-    const [date, setDate] = useState<Date>()
-    const [loading, setLoading] = useState(false)
-    const { toast } = useToast()
+  const [date, setDate] = useState<Date>()
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
 
-    const handleBan = async () => {
-        if (!date) return
+  const handleBan = async () => {
+    if (!date) return
 
-        try {
-            setLoading(true)
-            const response = await fetch(\`/api/organizations/\${organizationId}/ban\`, {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/organizations/${organizationId}/ban`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -64,7 +64,7 @@ export function BanDialog({
 
       toast({
         title: "Organization Banned",
-        description: \`\${organizationName} has been banned until \${format(date, "PPP")}.\`,
+        description: `${organizationName} has been banned until ${format(date, "PPP")}.`,
       })
 
       onBanComplete()
@@ -110,7 +110,7 @@ export function BanDialog({
                   mode="single"
                   selected={date}
                   onSelect={setDate}
-                  disabled={(date) =>
+                  disabled={(date: Date) =>
                     date < new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus

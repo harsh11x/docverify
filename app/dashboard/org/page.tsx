@@ -3,7 +3,6 @@ import { Building2, CheckCircle2, Clock, Database, AlertCircle, XCircle, FileTex
 import { HashDisplay } from "@/components/ui/hash-display"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { HashDisplay } from "@/components/ui/hash-display"
 
 export default function OrganizationDashboard() {
     // In a real app, fetch the logged-in organization

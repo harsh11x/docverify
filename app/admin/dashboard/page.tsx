@@ -6,81 +6,81 @@ import { format } from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card"
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { BanDialog } from "@/components/admin/ban-dialog"
 
 interface Organization {
-    orgId: string
-    name: string
-    walletAddress: string
-    status: 'pending' | 'verified' | 'rejected' | 'banned'
-    registrationTimestamp: number
-    banExpiresAt?: string
+  orgId: string
+  name: string
+  walletAddress: string
+  status: 'pending' | 'verified' | 'rejected' | 'banned'
+  registrationTimestamp: number
+  banExpiresAt?: string
 }
 
 export default function AdminDashboard() {
-    const [pendingOrgs, setPendingOrgs] = useState<Organization[]>([])
-    const [activeOrgs, setActiveOrgs] = useState<Organization[]>([])
-    const [loading, setLoading] = useState(true)
-    const [banDialogOpen, setBanDialogOpen] = useState(false)
-    const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
-    const { toast } = useToast()
+  const [pendingOrgs, setPendingOrgs] = useState<Organization[]>([])
+  const [activeOrgs, setActiveOrgs] = useState<Organization[]>([])
+  const [loading, setLoading] = useState(true)
+  const [banDialogOpen, setBanDialogOpen] = useState(false)
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const { toast } = useToast()
 
-    const fetchOrganizations = async () => {
-        try {
-            setLoading(true)
-            // Fetch pending organizations
-            const pendingRes = await fetch("/api/organizations?status=pending")
-            const pendingData = await pendingRes.json()
+  const fetchOrganizations = async () => {
+    try {
+      setLoading(true)
+      // Fetch pending organizations
+      const pendingRes = await fetch("/api/organizations?status=pending")
+      const pendingData = await pendingRes.json()
 
-            // Fetch active/all organizations
-            const allRes = await fetch("/api/organizations")
-            const allData = await allRes.json()
+      // Fetch active/all organizations
+      const allRes = await fetch("/api/organizations")
+      const allData = await allRes.json()
 
-            if (pendingData.success) {
-                setPendingOrgs(pendingData.data.organizations.filter((org: Organization) => org.status === 'pending'))
-            }
+      if (pendingData.success) {
+        setPendingOrgs(pendingData.data.organizations.filter((org: Organization) => org.status === 'pending'))
+      }
 
-            if (allData.success) {
-                setActiveOrgs(allData.data.organizations.filter((org: Organization) => org.status !== 'pending'))
-            }
-        } catch (error) {
-            console.error("Failed to fetch organizations:", error)
-            toast({
-                title: "Error",
-                description: "Failed to load organizations",
-                variant: "destructive",
-            })
-        } finally {
-            setLoading(false)
-        }
+      if (allData.success) {
+        setActiveOrgs(allData.data.organizations.filter((org: Organization) => org.status !== 'pending'))
+      }
+    } catch (error) {
+      console.error("Failed to fetch organizations:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load organizations",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
+  }
 
-    useEffect(() => {
-        fetchOrganizations()
-    }, [])
+  useEffect(() => {
+    fetchOrganizations()
+  }, [])
 
-    const handleApprove = async (orgId: string) => {
-        try {
-            const response = await fetch(\`/api/organizations/\${orgId}/approve\`, {
+  const handleApprove = async (orgId: string) => {
+    try {
+      const response = await fetch(`/api/organizations/${orgId}/approve`, {
         method: 'PUT'
       })
-      
+
       if (response.ok) {
         toast({ title: "Organization Approved" })
         fetchOrganizations()
@@ -88,20 +88,20 @@ export default function AdminDashboard() {
         throw new Error("Failed to approve")
       }
     } catch (error) {
-      toast({ 
-        title: "Error", 
+      toast({
+        title: "Error",
         description: "Failed to approve organization",
-        variant: "destructive" 
+        variant: "destructive"
       })
     }
   }
 
   const handleReject = async (orgId: string) => {
     try {
-      const response = await fetch(\`/api/organizations/\${orgId}/reject\`, {
+      const response = await fetch(`/api/organizations/${orgId}/reject`, {
         method: 'PUT'
       })
-      
+
       if (response.ok) {
         toast({ title: "Organization Rejected" })
         fetchOrganizations()
@@ -109,10 +109,10 @@ export default function AdminDashboard() {
         throw new Error("Failed to reject")
       }
     } catch (error) {
-      toast({ 
-        title: "Error", 
+      toast({
+        title: "Error",
         description: "Failed to reject organization",
-        variant: "destructive" 
+        variant: "destructive"
       })
     }
   }
@@ -208,8 +208,8 @@ export default function AdminDashboard() {
                   <TableCell className="font-medium">{org.name}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      org.status === 'verified' ? 'default' : 
-                      org.status === 'banned' ? 'destructive' : 'secondary'
+                      org.status === 'verified' ? 'default' :
+                        org.status === 'banned' ? 'destructive' : 'secondary'
                     }>
                       {org.status}
                     </Badge>
@@ -232,11 +232,11 @@ export default function AdminDashboard() {
       </Card>
 
       {selectedOrg && (
-        <BanDialog 
-          open={banDialogOpen} 
+        <BanDialog
+          open={banDialogOpen}
           onOpenChange={setBanDialogOpen}
           organizationId={selectedOrg.orgId}
-          organizationName={selectedOrg.name} 
+          organizationName={selectedOrg.name}
           onBanComplete={() => {
             fetchOrganizations()
             setSelectedOrg(null)

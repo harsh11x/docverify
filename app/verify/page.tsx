@@ -18,7 +18,26 @@ export default function VerifyPage() {
     const [result, setResult] = useState<Document | null>(null)
     const [notFound, setNotFound] = useState(false)
 
-    // ... handleVerify
+    const handleVerify = async () => {
+        if (!hash.trim()) return
+
+        setIsVerifying(true)
+        setNotFound(false)
+        setResult(null)
+
+        try {
+            const document = await blockchainService.verifyDocument(hash)
+            if (document) {
+                setResult(document)
+            } else {
+                setNotFound(true)
+            }
+        } catch (error) {
+            setNotFound(true)
+        } finally {
+            setIsVerifying(false)
+        }
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
