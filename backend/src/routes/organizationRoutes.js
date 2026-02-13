@@ -33,6 +33,30 @@ router.put(
     organizationController.deactivateOrganization.bind(organizationController)
 );
 
+// Approve organization (admin only)
+router.put(
+    '/:id/approve',
+    authMiddleware.authenticate,
+    roleMiddleware.requireAdmin,
+    organizationController.approveOrganization.bind(organizationController)
+);
+
+// Reject organization (admin only)
+router.put(
+    '/:id/reject',
+    authMiddleware.authenticate,
+    roleMiddleware.requireAdmin,
+    organizationController.rejectOrganization.bind(organizationController)
+);
+
+// Ban organization (admin only)
+router.put(
+    '/:id/ban',
+    authMiddleware.authenticate,
+    roleMiddleware.requireAdmin,
+    organizationController.banOrganization.bind(organizationController)
+);
+
 // Get organization statistics (public)
 router.get(
     '/:id/stats',

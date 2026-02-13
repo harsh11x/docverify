@@ -139,6 +139,46 @@ class PublicVerificationController {
             });
         }
     }
+    /**
+     * Verify by Certificate ID
+     * POST /api/verify/cert-id
+     */
+    async verifyByCertificateId(req, res) {
+        try {
+            const { certificateId } = req.body;
+
+            if (!certificateId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Certificate ID is required'
+                });
+            }
+
+            const result = await verificationService.verifyByCertificateId(certificateId);
+
+            if (!result.found && !result.verified) {
+                return res.status(404).json({
+                    success: false,
+                    verified: false,
+                    error: 'Certificate not found or invalid'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                verified: result.verified,
+                data: result
+            });
+
+        } catch (error) {
+            logger.error('Certificate verification failed:', error);
+            res.status(500).json({
+                success: false,
+                verified: false,
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = new PublicVerificationController();

@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS organizations (
     metadata TEXT,
     registration_timestamp BIGINT NOT NULL,
     is_active BOOLEAN DEFAULT true,
-    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'verified', 'rejected'
+    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'verified', 'rejected', 'banned'
+    ban_expires_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -48,10 +49,12 @@ CREATE TABLE IF NOT EXISTS verifications (
     verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     metadata JSONB,
     fabric_certificates JSONB,
+    certificate_id VARCHAR(255) UNIQUE,
     FOREIGN KEY (organization_id) REFERENCES organizations(org_id)
 );
 
 CREATE INDEX idx_verifications_doc_hash ON verifications(document_hash);
+CREATE INDEX idx_verifications_cert_id ON verifications(certificate_id);
 CREATE INDEX idx_verifications_org_id ON verifications(organization_id);
 CREATE INDEX idx_verifications_tx_hash ON verifications(ethereum_tx_hash);
 CREATE INDEX idx_verifications_block_number ON verifications(block_number);

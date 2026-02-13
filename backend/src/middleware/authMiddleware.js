@@ -47,6 +47,14 @@ class AuthMiddleware {
             });
 
             if (org) {
+                // Check if organization is banned
+                if (org.status === 'banned' && org.banExpiresAt && new Date(org.banExpiresAt) > new Date()) {
+                    return res.status(403).json({
+                        success: false,
+                        error: `Organization is banned until ${new Date(org.banExpiresAt).toLocaleString()}`
+                    });
+                }
+
                 req.user.organizationId = org.orgId;
                 req.user.isOrganization = true;
             }

@@ -5,9 +5,11 @@ import { WalletConnect } from "../wallet-connect"
 import { ArrowRight, Shield } from "lucide-react"
 import { useState } from "react"
 import { JoinDialog } from "@/components/auth/join-dialog"
+import { VerificationDialog } from "./verification-dialog"
 
 export function HeroSection() {
     const [isJoinOpen, setIsJoinOpen] = useState(false)
+    const [isVerifyOpen, setIsVerifyOpen] = useState(false)
 
     return (
         <section className="relative min-h-[90vh] flex items-center justify-center px-6 overflow-hidden">
@@ -40,16 +42,29 @@ export function HeroSection() {
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <WalletConnect />
+
+                    <button
+                        onClick={() => setIsVerifyOpen(true)}
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-border hover:bg-accent transition-colors font-medium"
+                    >
+                        Verify Document
+                    </button>
+
                     <button
                         onClick={() => setIsJoinOpen(true)}
-                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-border hover:bg-accent transition-colors font-medium"
+                        className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20"
                     >
                         Join Now
                         <ArrowRight className="h-4 w-4" />
                     </button>
+
                     <JoinDialog
                         isOpen={isJoinOpen}
                         onClose={() => setIsJoinOpen(false)}
+                    />
+                    <VerificationDialog
+                        isOpen={isVerifyOpen}
+                        onClose={() => setIsVerifyOpen(false)}
                     />
                 </div>
 

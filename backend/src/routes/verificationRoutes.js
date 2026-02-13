@@ -25,4 +25,11 @@ router.post(
     publicVerificationController.bulkVerify.bind(publicVerificationController)
 );
 
+// Verify by Certificate ID
+router.post(
+    '/cert-id',
+    rateLimiter.publicVerification,
+    publicVerificationController.verifyByCertificateId.bind(publicVerificationController)
+);
+
 module.exports = router;

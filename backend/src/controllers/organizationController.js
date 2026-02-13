@@ -1,4 +1,3 @@
-const ethereumService = require('../services/ethereumService');
 const logger = require('../utils/logger');
 const db = require('../database/models');
 
@@ -21,14 +20,9 @@ class OrganizationController {
 
             logger.info(`Registering organization: ${orgId}`);
 
-            // Register on Ethereum
-            const result = await ethereumService.registerOrganization(
-                orgId,
-                parseInt(orgType),
-                walletAddress,
-                name,
-                metadata || ''
-            );
+            // Register on Ethereum - REMOVED for Fabric-only implementation
+            // const result = await ethereumService.registerOrganization(...);
+            const result = { transactionHash: 'FABRIC-ONLY', blockNumber: 0 };
 
             // Store in database
             await db.Organization.create({
@@ -71,10 +65,14 @@ class OrganizationController {
             // Try database first
             let org = await db.Organization.findOne({ where: { orgId: id } });
 
-            // If not in database, fetch from Ethereum
+            // If not in database, fetch from Ethereum - REMOVED
             if (!org) {
-                const ethOrg = await ethereumService.getOrganization(id);
-                org = ethOrg;
+                // const ethOrg = await ethereumService.getOrganization(id);
+                // org = ethOrg;
+                return res.status(404).json({
+                    success: false,
+                    error: 'Organization not found'
+                });
             }
 
             res.status(200).json({
@@ -142,8 +140,9 @@ class OrganizationController {
 
             logger.info(`Deactivating organization: ${id}`);
 
-            // Deactivate on Ethereum
-            const result = await ethereumService.deactivateOrganization(id);
+            // Deactivate on Ethereum - REMOVED
+            // const result = await ethereumService.deactivateOrganization(id);
+            const result = { transactionHash: 'FABRIC-ONLY', blockNumber: 0 };
 
             // Update database
             await db.Organization.update(
@@ -275,6 +274,44 @@ class OrganizationController {
             });
         } catch (error) {
             logger.error('Failed to reject organization:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Ban organization temporarily
+     * PUT /api/organizations/:id/ban
+     */
+    async banOrganization(req, res) {
+        try {
+            const { id } = req.params;
+            const { banExpiresAt } = req.body;
+
+            if (!banExpiresAt) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Ban expiration date is required'
+                });
+            }
+
+            await db.Organization.update(
+                {
+                    status: 'banned',
+                    isActive: false,
+                    banExpiresAt: new Date(banExpiresAt)
+                },
+                { where: { orgId: id } }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: `Organization banned until ${banExpiresAt}`
+            });
+        } catch (error) {
+            logger.error('Failed to ban organization:', error);
             res.status(500).json({
                 success: false,
                 error: error.message

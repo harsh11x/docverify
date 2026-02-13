@@ -68,6 +68,10 @@ const Organization = sequelize.define('Organization', {
     status: {
         type: DataTypes.STRING(50),
         defaultValue: 'pending'
+    },
+    banExpiresAt: {
+        type: DataTypes.DATE,
+        field: 'ban_expires_at'
     }
 }, {
     tableName: 'organizations',
@@ -162,6 +166,11 @@ const Verification = sequelize.define('Verification', {
     fabricCertificates: {
         type: DataTypes.JSONB,
         field: 'fabric_certificates'
+    },
+    certificateId: {
+        type: DataTypes.STRING(255),
+        unique: true,
+        field: 'certificate_id'
     }
 }, {
     tableName: 'verifications',
@@ -259,7 +268,7 @@ async function initializeDatabase() {
         logger.info('Database connection established successfully');
 
         // Sync models (use { force: false } in production)
-        await sequelize.sync({ alter: false });
+        await sequelize.sync({ alter: true });
         logger.info('Database models synchronized');
 
         return true;
