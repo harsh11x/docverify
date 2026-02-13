@@ -179,6 +179,55 @@ class PublicVerificationController {
             });
         }
     }
+});
+        }
+    }
+
+    /**
+     * Download Certificate PDF
+     * GET /api/verify/download/:certificateId
+     */
+    async downloadCertificate(req, res) {
+    try {
+        const { certificateId } = req.params;
+
+        if (!certificateId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Certificate ID is required'
+            });
+        }
+
+        // Find verification record
+        const db = require('../database/models');
+        const verification = await db.Verification.findOne({
+            where: { certificateId }
+        });
+
+        if (!verification || !verification.ipfsCID) {
+            return res.status(404).json({
+                success: false,
+                error: 'Certificate not found or file unavailable'
+            });
+        }
+
+        // Fetch file from IPFS
+        const ipfsService = require('../services/ipfsService');
+        const fileBuffer = await ipfsService.getFile(verification.ipfsCID);
+
+        // Set headers for download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificateId}.pdf"`);
+        res.send(fileBuffer);
+
+    } catch (error) {
+        logger.error('Certificate download failed:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to download certificate'
+        });
+    }
+}
 }
 
 module.exports = new PublicVerificationController();

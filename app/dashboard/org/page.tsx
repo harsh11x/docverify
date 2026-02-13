@@ -1,5 +1,8 @@
 import { mockOrganizations } from "@/lib/mock-data"
-import { Building2, CheckCircle2, Clock, Database, AlertCircle, XCircle } from "lucide-react"
+import { Building2, CheckCircle2, Clock, Database, AlertCircle, XCircle, FileText, Plus } from "lucide-react"
+import { HashDisplay } from "@/components/ui/hash-display"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { HashDisplay } from "@/components/ui/hash-display"
 
 export default function OrganizationDashboard() {
@@ -102,11 +105,27 @@ export default function OrganizationDashboard() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold mb-2">Organization Dashboard</h1>
-                <p className="text-muted-foreground">
-                    Manage certificates and sync with blockchain
-                </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">Organization Dashboard</h1>
+                    <p className="text-muted-foreground">
+                        Manage certificates and sync with blockchain
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                        <Link href="/dashboard/org/templates/create">
+                            <FileText className="mr-2 h-4 w-4" />
+                            Design Template
+                        </Link>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/dashboard/org/issue">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Issue Certificate
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Organization Profile */}

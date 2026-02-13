@@ -257,9 +257,45 @@ const SyncStatus = sequelize.define('SyncStatus', {
     underscored: true
 });
 
+const Template = sequelize.define('Template', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    organizationId: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        field: 'organization_id'
+    },
+    name: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
+    structure: {
+        type: DataTypes.JSONB,
+        allowNull: false
+    },
+    backgroundType: {
+        type: DataTypes.STRING(50),
+        defaultValue: 'ipfs',
+        field: 'background_type'
+    },
+    backgroundUrl: {
+        type: DataTypes.STRING(255),
+        field: 'background_url'
+    }
+}, {
+    tableName: 'templates',
+    underscored: true
+});
+
 // Define associations
 Verification.belongsTo(Organization, { foreignKey: 'organizationId', targetKey: 'orgId' });
 Organization.hasMany(Verification, { foreignKey: 'organizationId', sourceKey: 'orgId' });
+
+Template.belongsTo(Organization, { foreignKey: 'organizationId', targetKey: 'orgId' });
+Organization.hasMany(Template, { foreignKey: 'organizationId', sourceKey: 'orgId' });
 
 // Test connection and sync
 async function initializeDatabase() {
@@ -285,5 +321,6 @@ module.exports = {
     Verification,
     Event,
     SyncStatus,
+    Template,
     initializeDatabase
 };

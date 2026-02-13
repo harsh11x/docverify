@@ -1,7 +1,11 @@
 const express = require('express');
 const organizationController = require('../controllers/organizationController');
+const templateController = require('../controllers/templateController');
+const issuanceController = require('../controllers/issuanceController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -61,6 +65,44 @@ router.put(
 router.get(
     '/:id/stats',
     organizationController.getOrganizationStats.bind(organizationController)
+);
+
+// Template Routes
+router.post(
+    '/templates',
+    authMiddleware.authenticate,
+    roleMiddleware.requireOrganization,
+    templateController.createTemplate.bind(templateController)
+);
+
+router.get(
+    '/templates',
+    authMiddleware.authenticate,
+    roleMiddleware.requireOrganization,
+    templateController.getTemplates.bind(templateController)
+);
+
+router.delete(
+    '/templates/:id',
+    authMiddleware.authenticate,
+    roleMiddleware.requireOrganization,
+    templateController.deleteTemplate.bind(templateController)
+);
+
+// Issuance Routes
+router.post(
+    '/issue/manual',
+    authMiddleware.authenticate,
+    roleMiddleware.requireOrganization,
+    issuanceController.issueManual.bind(issuanceController)
+);
+
+router.post(
+    '/issue/bulk',
+    authMiddleware.authenticate,
+    roleMiddleware.requireOrganization,
+    upload.single('file'),
+    issuanceController.issueBulk.bind(issuanceController)
 );
 
 module.exports = router;

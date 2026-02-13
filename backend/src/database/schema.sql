@@ -20,6 +20,21 @@ CREATE INDEX idx_organizations_org_id ON organizations(org_id);
 CREATE INDEX idx_organizations_wallet ON organizations(wallet_address);
 CREATE INDEX idx_organizations_active ON organizations(is_active);
 
+-- Templates table
+CREATE TABLE IF NOT EXISTS templates (
+    id SERIAL PRIMARY KEY,
+    organization_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    structure JSONB NOT NULL, -- Field definitions and positions
+    background_type VARCHAR(50) DEFAULT 'ipfs', -- 'ipfs' or 'upload'
+    background_url VARCHAR(255), -- IPFS CID or local path
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(org_id)
+);
+
+CREATE INDEX idx_templates_org_id ON templates(organization_id);
+
 -- Documents table
 CREATE TABLE IF NOT EXISTS documents (
     id SERIAL PRIMARY KEY,

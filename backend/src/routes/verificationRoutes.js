@@ -31,5 +31,11 @@ router.post(
     rateLimiter.publicVerification,
     publicVerificationController.verifyByCertificateId.bind(publicVerificationController)
 );
+// Download Certificate
+router.get(
+    '/download/:certificateId',
+    rateLimiter.publicVerification,
+    publicVerificationController.downloadCertificate.bind(publicVerificationController)
+);
 
 module.exports = router;

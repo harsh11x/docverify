@@ -107,6 +107,62 @@ class VerificationService {
     }
 
     /**
+     * Process an internally issued document
+     * @param {Buffer} fileBuffer - Document buffer
+     * @param {string} documentHash - Document hash
+     * @param {string} ipfsCID - IPFS CID
+     * @param {string} organizationId - Organization ID
+     * @param {Object} metadata - Metadata (recipient, etc.)
+     */
+    async processIssuedDocument(fileBuffer, documentHash, ipfsCID, organizationId, metadata) {
+        try {
+            logger.info(`Processing issued document for org: ${organizationId}`);
+
+            // 1. Generate ID (use provided one from metadata if exists, else generate)
+            const certificateId = metadata.certificateId || this.generateCertificateId();
+
+            // 2. Issue on Fabric
+            const fabricCert = await fabricService.issueCertificate({
+                certificateId,
+                organizationId,
+                documentHash,
+                holderName: metadata.recipientName || metadata.name || 'Unknown',
+                issueDate: new Date().toISOString(),
+                metadata
+            });
+
+            // 3. Store in DB
+            const record = await this.storeVerificationRecord({
+                documentHash,
+                ipfsCID,
+                organizationId,
+                fabricProofHash: fabricCert.proofHash || 'PENDING_CONSENSUS',
+                ethereumTxHash: 'N/A',
+                blockNumber: 0,
+                verified: true,
+                metadata,
+                fabricCertificates: [fabricCert],
+                certificateId
+            });
+
+            logger.info(`Document issued successfully: ${certificateId}`);
+
+            return {
+                success: true,
+                verified: true,
+                certificateId,
+                transactionId: fabricCert.transactionId,
+                ipfsCID,
+                documentHash
+            };
+
+        } catch (error) {
+            logger.error('Failed to process issued document:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Compute SHA-256 hash of document
      * @param {Buffer} fileBuffer - File buffer
      * @returns {string} Hex hash
@@ -168,42 +224,42 @@ class VerificationService {
         try {
             logger.info(`Public verification check for hash: ${documentHash}`);
 
-            verified: true,
+            return {
+                verified: true,
                 documentHash,
                 ipfsCID: dbRecord?.ipfsCID || '',
-                    organization: {
-                id: fabricCertificates[0].organizationId,
+                organization: {
+                    id: fabricCertificates[0].organizationId,
                     name: 'Organization (Fabric)', // In real app, query Org details from DB or Fabric
-                        type: 1,
-                            isActive: true
-            },
-            timestamp: Math.floor(new Date(fabricCertificates[0].issueDate).getTime() / 1000),
+                    type: 1,
+                    isActive: true
+                },
+                timestamp: Math.floor(new Date(fabricCertificates[0].issueDate).getTime() / 1000),
                 blockNumber: 0,
-                    ethereumTxHash: 'N/A',
-                        certificateDetails: fabricCertificates[0],
-                            proof: {
-                fabricProofHash: this.generateFabricProofHash(documentHash, fabricCertificates[0].organizationId, 0),
+                ethereumTxHash: 'N/A',
+                certificateDetails: fabricCertificates[0],
+                proof: {
+                    fabricProofHash: this.generateFabricProofHash(documentHash, fabricCertificates[0].organizationId, 0),
                     fabricCertificate: fabricCertificates[0]
-            }
-        }
+                }
             };
 
-} catch (error) {
-    logger.error('Public verification failed:', error);
-    throw new Error(`Public verification failed: ${error.message}`);
-}
+        } catch (error) {
+            logger.error('Public verification failed:', error);
+            throw new Error(`Public verification failed: ${error.message}`);
+        }
     }
 
-/**
- * Generate unique certificate ID
- * Format: CERT-YYYYMMDD-RANDOM
- * @returns {string} Certificate ID
- */
-generateCertificateId() {
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const random = crypto.randomBytes(3).toString('hex').toUpperCase();
-    return `CERT-${date}-${random}`;
-}
+    /**
+     * Generate unique certificate ID
+     * Format: CERT-YYYYMMDD-RANDOM
+     * @returns {string} Certificate ID
+     */
+    generateCertificateId() {
+        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const random = crypto.randomBytes(3).toString('hex').toUpperCase();
+        return `CERT-${date}-${random}`;
+    }
 
     /**
      * Verify by Certificate ID
@@ -211,46 +267,46 @@ generateCertificateId() {
      * @returns {Object} Verification Details
      */
     async verifyByCertificateId(certificateId) {
-    try {
-        logger.info(`Verification check for Certificate ID: ${certificateId}`);
+        try {
+            logger.info(`Verification check for Certificate ID: ${certificateId}`);
 
-        const dbRecord = await db.Verification.findOne({
-            where: { certificateId }
-        });
+            const dbRecord = await db.Verification.findOne({
+                where: { certificateId }
+            });
 
-        if (!dbRecord) {
+            if (!dbRecord) {
+                return {
+                    verified: false,
+                    message: 'Certificate ID not found'
+                };
+            }
+
+            // Reuse public verify logic but with found document hash
+            // This ensures we still check chain consistency
+            const result = await this.publicVerify(dbRecord.documentHash);
+
             return {
-                verified: false,
-                message: 'Certificate ID not found'
+                ...result,
+                certificateId: dbRecord.certificateId,
+                found: true
             };
+
+        } catch (error) {
+            logger.error('Certificate ID verification failed:', error);
+            throw error;
         }
-
-        // Reuse public verify logic but with found document hash
-        // This ensures we still check chain consistency
-        const result = await this.publicVerify(dbRecord.documentHash);
-
-        return {
-            ...result,
-            certificateId: dbRecord.certificateId,
-            found: true
-        };
-
-    } catch (error) {
-        logger.error('Certificate ID verification failed:', error);
-        throw error;
     }
-}
 
-/**
- * Validate cross-chain consistency
- * @param {Object} ethereumData - Ethereum verification data
- * @param {Object} fabricData - Fabric certificate data
- * @returns {boolean} Consistency status
- */
-validateCrossChainConsistency(ethereumData, fabricData) {
-    // Validation removed as Ethereum is no longer used
-    return true;
-}
+    /**
+     * Validate cross-chain consistency
+     * @param {Object} ethereumData - Ethereum verification data
+     * @param {Object} fabricData - Fabric certificate data
+     * @returns {boolean} Consistency status
+     */
+    validateCrossChainConsistency(ethereumData, fabricData) {
+        // Validation removed as Ethereum is no longer used
+        return true;
+    }
 
     /**
      * Get verification history for a document
@@ -258,31 +314,31 @@ validateCrossChainConsistency(ethereumData, fabricData) {
      * @returns {Array} Verification history
      */
     async getVerificationHistory(documentHash) {
-    try {
-        // Get Fabric history
-        // Ethereum events removed
-        const ethereumEvents = [];
+        try {
+            // Get Fabric history
+            // Ethereum events removed
+            const ethereumEvents = [];
 
-        // Get Fabric history
-        const fabricCerts = await fabricService.queryCertificateByHash(documentHash);
-        let fabricHistory = [];
+            // Get Fabric history
+            const fabricCerts = await fabricService.queryCertificateByHash(documentHash);
+            let fabricHistory = [];
 
-        if (fabricCerts.length > 0) {
-            fabricHistory = await fabricService.getCertificateHistory(fabricCerts[0].certificateId);
+            if (fabricCerts.length > 0) {
+                fabricHistory = await fabricService.getCertificateHistory(fabricCerts[0].certificateId);
+            }
+
+            return {
+                documentHash,
+                ethereumEvents: [],
+                fabricHistory,
+                totalEvents: fabricHistory.length
+            };
+
+        } catch (error) {
+            logger.error('Failed to get verification history:', error);
+            throw error;
         }
-
-        return {
-            documentHash,
-            ethereumEvents: [],
-            fabricHistory,
-            totalEvents: fabricHistory.length
-        };
-
-    } catch (error) {
-        logger.error('Failed to get verification history:', error);
-        throw error;
     }
-}
 
     /**
      * Batch verify multiple documents
@@ -291,27 +347,27 @@ validateCrossChainConsistency(ethereumData, fabricData) {
      * @returns {Array} Verification results
      */
     async batchVerify(documents, organizationId) {
-    const results = [];
+        const results = [];
 
-    for (const doc of documents) {
-        try {
-            const result = await this.verifyDocument(
-                doc.buffer,
-                doc.metadata,
-                organizationId
-            );
-            results.push(result);
-        } catch (error) {
-            results.push({
-                success: false,
-                error: error.message,
-                metadata: doc.metadata
-            });
+        for (const doc of documents) {
+            try {
+                const result = await this.verifyDocument(
+                    doc.buffer,
+                    doc.metadata,
+                    organizationId
+                );
+                results.push(result);
+            } catch (error) {
+                results.push({
+                    success: false,
+                    error: error.message,
+                    metadata: doc.metadata
+                });
+            }
         }
-    }
 
-    return results;
-}
+        return results;
+    }
 }
 
 module.exports = new VerificationService();

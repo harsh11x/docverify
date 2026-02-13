@@ -8,58 +8,46 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { formatDate, formatBlockNumber } from "@/lib/utils"
 import { Document } from "@/types"
 
+// ... imports
+import { Download } from "lucide-react"
+
 export default function VerifyPage() {
+    // ... state
     const [hash, setHash] = useState("")
     const [isVerifying, setIsVerifying] = useState(false)
     const [result, setResult] = useState<Document | null>(null)
     const [notFound, setNotFound] = useState(false)
 
-    const handleVerify = async () => {
-        if (!hash.trim()) return
-
-        setIsVerifying(true)
-        setNotFound(false)
-        setResult(null)
-
-        try {
-            const document = await blockchainService.verifyDocument(hash)
-            if (document) {
-                setResult(document)
-            } else {
-                setNotFound(true)
-            }
-        } catch (error) {
-            setNotFound(true)
-        } finally {
-            setIsVerifying(false)
-        }
-    }
+    // ... handleVerify
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-6 py-12">
-            <div className="max-w-3xl w-full space-y-8">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">Verify Document</h1>
-                    <p className="text-muted-foreground text-lg">
-                        Enter a document hash to verify its authenticity on the blockchain
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl w-full space-y-8">
+                <div className="text-center space-y-4">
+                    <h1 className="text-4xl font-bold tracking-tight text-slate-900">
+                        Verify Document Authenticity
+                    </h1>
+                    <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                        Securely verify certificates and documents on the blockchain.
+                        Enter the document hash or certificate ID below.
                     </p>
                 </div>
 
                 {/* Search Input */}
-                <div className="p-8 rounded-lg border border-border bg-card">
-                    <div className="flex gap-3">
+                <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <input
                             type="text"
                             value={hash}
                             onChange={(e) => setHash(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-                            placeholder="Enter document hash (0x...)"
-                            className="flex-1 px-4 py-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                            placeholder="Enter Certificate ID (e.g., CERT-123) or Document Hash (0x...)"
+                            className="flex-1 px-4 py-3 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-mono text-sm"
                         />
                         <button
                             onClick={handleVerify}
                             disabled={isVerifying || !hash.trim()}
-                            className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+                            className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                         >
                             {isVerifying ? (
                                 <>
@@ -78,129 +66,104 @@ export default function VerifyPage() {
 
                 {/* Verification Result */}
                 {result && (
-                    <div className="p-8 rounded-lg border-2 border-verification-verified bg-verification-verified/5 animate-fade-in">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-12 h-12 rounded-full bg-verification-verified/20 flex items-center justify-center">
-                                <svg
-                                    className="h-6 w-6 text-verification-verified"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                    <div className="bg-white rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 border border-green-100">
+                        {/* Header */}
+                        <div className="bg-green-50/50 p-8 border-b border-green-100 flex flex-col sm:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center shadow-inner">
+                                    <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-900">Valid Certificate</h2>
+                                    <p className="text-green-700 font-medium flex items-center gap-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        Verified on Blockchain
+                                    </p>
+                                </div>
+                            </div>
+
+                            {result.certificateId && result.ipfsCid && (
+                                <a
+                                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/verify/download/${result.certificateId}`}
+                                    download
+                                    className="px-6 py-2.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:bg-slate-50 hover:text-slate-900 transition-all flex items-center gap-2 shadow-sm hover:shadow"
+                                    target="_blank" rel="noopener noreferrer"
                                 >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-verification-verified">
-                                    Document Verified
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    This document has been verified on the blockchain
-                                </p>
-                            </div>
+                                    <Download className="h-4 w-4" />
+                                    Download Verified PDF
+                                </a>
+                            )}
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-xs text-muted-foreground mb-2">Document Hash</p>
-                                <HashDisplay hash={result.hash} truncate={false} />
-                            </div>
-
-                            <div>
-                                <p className="text-xs text-muted-foreground mb-2">IPFS CID</p>
-                                <HashDisplay hash={result.ipfsCid} />
-                            </div>
-
-                            {result.organizationName && (
+                        {/* Content */}
+                        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
                                 <div>
-                                    <p className="text-xs text-muted-foreground mb-2">
-                                        Issuing Organization
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Issuing Organization</label>
+                                    <p className="text-lg font-medium text-slate-900 mt-1">{result.organizationName || 'Unknown Organization'}</p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Recipient</label>
+                                    {/* Handle potentially nested metadata */}
+                                    <p className="text-lg font-medium text-slate-900 mt-1">
+                                        {/* @ts-ignore - Temporary loose typing for demo */}
+                                        {result.holderName || result.metadata?.name || result.metadata?.recipientName || 'N/A'}
                                     </p>
-                                    <p className="text-lg font-semibold">{result.organizationName}</p>
                                 </div>
-                            )}
 
-                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs text-muted-foreground mb-2">Timestamp</p>
-                                    <p className="text-sm font-medium">{formatDate(result.timestamp)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-2">Block Number</p>
-                                    <p className="text-sm font-medium">
-                                        {result.blockNumber && formatBlockNumber(result.blockNumber)}
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue Date</label>
+                                    <p className="mt-1 font-mono text-slate-700 bg-slate-50 inline-block px-3 py-1 rounded border border-slate-100">
+                                        {formatDate(result.timestamp)}
                                     </p>
                                 </div>
                             </div>
 
-                            {result.transactionHash && (
+                            <div className="space-y-6">
                                 <div>
-                                    <p className="text-xs text-muted-foreground mb-2">
-                                        Blockchain Proof
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Certificate ID</label>
+                                    <p className="mt-1 font-mono text-sm text-slate-600 break-all bg-slate-50 p-3 rounded border border-slate-100">
+                                        {/* @ts-ignore */}
+                                        {result.certificateId || 'N/A'}
                                     </p>
-                                    <a
-                                        href={`https://etherscan.io/tx/${result.transactionHash}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-primary hover:underline"
-                                    >
-                                        View on Etherscan
-                                        <ExternalLink className="h-4 w-4" />
-                                    </a>
                                 </div>
-                            )}
+
+                                <div>
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Document Hash</label>
+                                    <div className="mt-1">
+                                        <HashDisplay hash={result.hash} truncate={true} />
+                                    </div>
+                                </div>
+
+                                {result.transactionHash && result.transactionHash !== 'N/A' && (
+                                    <div>
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Blockchain Proof</label>
+                                        <a href="#" className="flex items-center gap-2 mt-1 text-primary hover:text-primary/80 hover:underline">
+                                            <span>View Transaction</span>
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Not Found */}
                 {notFound && (
-                    <div className="p-8 rounded-lg border-2 border-verification-rejected bg-verification-rejected/5 animate-fade-in">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-full bg-verification-rejected/20 flex items-center justify-center">
-                                <svg
-                                    className="h-6 w-6 text-verification-rejected"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-bold text-verification-rejected">
-                                    Document Not Found
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    This document hash was not found on the blockchain
-                                </p>
-                            </div>
+                    <div className="p-8 rounded-xl bg-white shadow-lg border border-red-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                            <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </div>
-
-                        <div className="p-4 rounded-lg bg-muted/50">
-                            <p className="text-sm text-muted-foreground mb-2">
-                                This could mean:
-                            </p>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                <li>The document has not been registered on the blockchain</li>
-                                <li>The hash you entered is incorrect</li>
-                                <li>The document was registered on a different network</li>
-                            </ul>
-                            <p className="text-sm text-muted-foreground mt-4">
-                                Please verify the hash and try again, or contact the issuing
-                                organization for assistance.
-                            </p>
-                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 mb-2">Verification Failed</h2>
+                        <p className="text-slate-600 max-w-md">
+                            We couldn't find a certificate matching that ID or hash. Please check your input and try again.
+                        </p>
                     </div>
                 )}
             </div>
