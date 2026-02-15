@@ -16,6 +16,8 @@ const db = require('./database/models');
 const ipfsService = require('./services/ipfsService');
 const ethereumService = require('./services/ethereumService');
 const fabricService = require('./services/fabricService');
+const syncEngine = require('./services/syncEngine');
+const batchAnchoringService = require('./services/batchAnchoringService');
 
 // Import event listeners
 const ethereumListener = require('./events/ethereumListener');
@@ -25,7 +27,10 @@ const fabricListener = require('./events/fabricListener');
 const documentRoutes = require('./routes/documentRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
+const governanceRoutes = require('./routes/governanceRoutes');
+const syncRoutes = require('./routes/syncRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
+const securityMiddleware = require('./middleware/securityMiddleware');
 
 // Initialize Express app
 const app = express();
@@ -62,6 +67,12 @@ app.use(morgan('combined', {
         write: (message) => logger.http(message.trim())
     }
 }));
+
+// Security middleware
+app.use(securityMiddleware.addSecurityHeaders.bind(securityMiddleware));
+app.use(securityMiddleware.sanitizeRequest.bind(securityMiddleware));
+app.use(securityMiddleware.verifyRequestTimestamp.bind(securityMiddleware));
+app.use(securityMiddleware.detectSuspiciousActivity.bind(securityMiddleware));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -120,6 +131,8 @@ app.post('/api/auth/nonce', authMiddleware.generateNonce.bind(authMiddleware));
 app.use('/api/documents', documentRoutes);
 app.use('/api/organizations', organizationRoutes);
 app.use('/api/verify', verificationRoutes);
+app.use('/api/governance', governanceRoutes);
+app.use('/api/sync', syncRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -169,23 +182,60 @@ async function initialize() {
         logger.info('✓ Database initialized');
 
         // Initialize IPFS
-        await ipfsService.initialize();
-        logger.info('✓ IPFS initialized');
+        try {
+            await ipfsService.initialize();
+            logger.info('✓ IPFS initialized');
+        } catch (ipfsError) {
+            logger.warn('⚠ IPFS initialization failed (non-critical):', ipfsError.message);
+        }
 
         // Initialize Ethereum
-        await ethereumService.initialize();
-        logger.info('✓ Ethereum initialized');
+        try {
+            await ethereumService.initialize();
+            logger.info('✓ Ethereum initialized');
+        } catch (ethError) {
+            logger.warn('⚠ Ethereum initialization failed (non-critical):', ethError.message);
+        }
 
         // Initialize Fabric
-        await fabricService.initialize();
-        logger.info('✓ Fabric initialized');
+        try {
+            await fabricService.initialize();
+            logger.info('✓ Fabric initialized');
+        } catch (fabricError) {
+            logger.warn('⚠ Fabric initialization failed (non-critical):', fabricError.message);
+        }
 
         // Start event listeners
-        await ethereumListener.start();
-        logger.info('✓ Ethereum event listener started');
+        try {
+            await ethereumListener.start();
+            logger.info('✓ Ethereum event listener started');
+        } catch (ethListenerError) {
+            logger.warn('⚠ Ethereum listener start failed:', ethListenerError.message);
+        }
 
-        await fabricListener.start();
-        logger.info('✓ Fabric event listener started');
+        try {
+            await fabricListener.start();
+            logger.info('✓ Fabric event listener started');
+        } catch (fabricListenerError) {
+            logger.warn('⚠ Fabric listener start failed:', fabricListenerError.message);
+        }
+
+        // Initialize sync engine
+        try {
+            await syncEngine.initialize();
+            await syncEngine.start();
+            logger.info('✓ Sync engine started');
+        } catch (syncError) {
+            logger.warn('⚠ Sync engine start failed:', syncError.message);
+        }
+
+        // Initialize batch anchoring
+        try {
+            await batchAnchoringService.initialize();
+            logger.info('✓ Batch anchoring service initialized');
+        } catch (batchError) {
+            logger.warn('⚠ Batch anchoring initialization failed:', batchError.message);
+        }
 
         logger.info('All services initialized successfully');
 
@@ -215,32 +265,28 @@ initialize()
     });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-    logger.info('SIGTERM received, shutting down gracefully...');
+async function gracefulShutdown(signal) {
+    logger.info(`${signal} received, shutting down gracefully...`);
 
-    ethereumListener.stop();
-    await fabricListener.stop();
-    await fabricService.disconnect();
-    await db.sequelize.close();
+    try {
+        ethereumListener.stop();
+        await fabricListener.stop();
+        syncEngine.stop();
+        batchAnchoringService.stop();
+        await fabricService.disconnect();
+        await db.sequelize.close();
 
-    server.close(() => {
-        logger.info('Server closed');
-        process.exit(0);
-    });
-});
+        server.close(() => {
+            logger.info('Server closed');
+            process.exit(0);
+        });
+    } catch (error) {
+        logger.error('Error during shutdown:', error);
+        process.exit(1);
+    }
+}
 
-process.on('SIGINT', async () => {
-    logger.info('SIGINT received, shutting down gracefully...');
-
-    ethereumListener.stop();
-    await fabricListener.stop();
-    await fabricService.disconnect();
-    await db.sequelize.close();
-
-    server.close(() => {
-        logger.info('Server closed');
-        process.exit(0);
-    });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 module.exports = { app, server, io };

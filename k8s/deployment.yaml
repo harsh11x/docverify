@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: docverify-backend
+  namespace: docverify
   labels:
     app: docverify
     component: backend
@@ -11,12 +12,26 @@ spec:
     matchLabels:
       app: docverify
       component: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: docverify
         component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5000"
+        prometheus.io/path: "/metrics"
     spec:
+      serviceAccountName: docverify-backend
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
       - name: backend
         image: docverify/backend:latest
@@ -24,43 +39,48 @@ spec:
         ports:
         - containerPort: 5000
           name: http
+        envFrom:
+        - configMapRef:
+            name: docverify-config
         env:
-        - name: NODE_ENV
-          value: "production"
-        - name: PORT
-          value: "5000"
-        - name: DB_HOST
+        - name: DB_USER
           valueFrom:
             secretKeyRef:
               name: docverify-secrets
-              key: db-host
+              key: DB_USER
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: docverify-secrets
-              key: db-password
+              key: DB_PASSWORD
         - name: ETHEREUM_PRIVATE_KEY
           valueFrom:
             secretKeyRef:
               name: docverify-secrets
-              key: ethereum-private-key
-        - name: ETHEREUM_RPC_URL
+              key: ETHEREUM_PRIVATE_KEY
+        - name: ETHEREUM_CONTRACT_ADDRESS
           valueFrom:
-            configMapKeyRef:
-              name: docverify-config
-              key: ethereum-rpc-url
-        - name: IPFS_HOST
+            secretKeyRef:
+              name: docverify-secrets
+              key: ETHEREUM_CONTRACT_ADDRESS
+        - name: JWT_SECRET
           valueFrom:
-            configMapKeyRef:
-              name: docverify-config
-              key: ipfs-host
+            secretKeyRef:
+              name: docverify-secrets
+              key: JWT_SECRET
+        volumeMounts:
+        - name: fabric-config
+          mountPath: /fabric/config
+          readOnly: true
+        - name: logs
+          mountPath: /app/logs
         resources:
           requests:
             memory: "512Mi"
             cpu: "250m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "2Gi"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
@@ -77,18 +97,43 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: fabric-config
+        secret:
+          secretName: fabric-credentials
+      - name: logs
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - docverify
+              topologyKey: kubernetes.io/hostname
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: docverify-backend
+  name: docverify-backend-service
+  namespace: docverify
   labels:
     app: docverify
     component: backend
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
-  - port: 80
+  - port: 5000
     targetPort: 5000
     protocol: TCP
     name: http
@@ -97,38 +142,23 @@ spec:
     component: backend
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: ServiceAccount
 metadata:
-  name: docverify-config
-data:
-  ethereum-rpc-url: "https://sepolia.infura.io/v3/YOUR_KEY"
-  ipfs-host: "ipfs-service"
-  ipfs-port: "5001"
-  redis-host: "redis-service"
-  redis-port: "6379"
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: docverify-secrets
-type: Opaque
-stringData:
-  db-host: "postgres-service"
-  db-password: "CHANGE_ME"
-  ethereum-private-key: "CHANGE_ME"
-  jwt-secret: "CHANGE_ME"
+  name: docverify-backend
+  namespace: docverify
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: docverify-backend-hpa
+  namespace: docverify
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: docverify-backend
   minReplicas: 3
-  maxReplicas: 10
+  maxReplicas: 20
   metrics:
   - type: Resource
     resource:
@@ -142,3 +172,32 @@ spec:
       target:
         type: Utilization
         averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: docverify-backend-pdb
+  namespace: docverify
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: docverify
+      component: backend

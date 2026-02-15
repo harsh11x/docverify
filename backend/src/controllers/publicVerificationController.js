@@ -52,7 +52,6 @@ class PublicVerificationController {
                 });
             }
 
-            // Find verification by CID
             const db = require('../database/models');
             const verification = await db.Verification.findOne({
                 where: { ipfsCid: ipfsCID }
@@ -66,7 +65,6 @@ class PublicVerificationController {
                 });
             }
 
-            // Get full verification details
             const result = await verificationService.publicVerify(verification.documentHash);
 
             res.status(200).json({
@@ -139,6 +137,7 @@ class PublicVerificationController {
             });
         }
     }
+
     /**
      * Verify by Certificate ID
      * POST /api/verify/cert-id
@@ -179,55 +178,125 @@ class PublicVerificationController {
             });
         }
     }
-});
-        }
-    }
 
     /**
      * Download Certificate PDF
      * GET /api/verify/download/:certificateId
      */
     async downloadCertificate(req, res) {
-    try {
-        const { certificateId } = req.params;
+        try {
+            const { certificateId } = req.params;
 
-        if (!certificateId) {
-            return res.status(400).json({
+            if (!certificateId) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Certificate ID is required'
+                });
+            }
+
+            const db = require('../database/models');
+            const verification = await db.Verification.findOne({
+                where: { certificateId }
+            });
+
+            if (!verification || !verification.ipfsCid) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Certificate not found or file unavailable'
+                });
+            }
+
+            const ipfsService = require('../services/ipfsService');
+            const fileBuffer = await ipfsService.getFile(verification.ipfsCid);
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificateId}.pdf"`);
+            res.send(fileBuffer);
+
+        } catch (error) {
+            logger.error('Certificate download failed:', error);
+            res.status(500).json({
                 success: false,
-                error: 'Certificate ID is required'
+                error: 'Failed to download certificate'
             });
         }
-
-        // Find verification record
-        const db = require('../database/models');
-        const verification = await db.Verification.findOne({
-            where: { certificateId }
-        });
-
-        if (!verification || !verification.ipfsCID) {
-            return res.status(404).json({
-                success: false,
-                error: 'Certificate not found or file unavailable'
-            });
-        }
-
-        // Fetch file from IPFS
-        const ipfsService = require('../services/ipfsService');
-        const fileBuffer = await ipfsService.getFile(verification.ipfsCID);
-
-        // Set headers for download
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="certificate-${certificateId}.pdf"`);
-        res.send(fileBuffer);
-
-    } catch (error) {
-        logger.error('Certificate download failed:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to download certificate'
-        });
     }
-}
+
+    /**
+     * Get verification history
+     * GET /api/verify/history/:documentHash
+     */
+    async getVerificationHistory(req, res) {
+        try {
+            const { documentHash } = req.params;
+
+            if (!documentHash) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Document hash is required'
+                });
+            }
+
+            const history = await verificationService.getVerificationHistory(documentHash);
+
+            res.status(200).json({
+                success: true,
+                data: history
+            });
+
+        } catch (error) {
+            logger.error('Failed to get verification history:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * Get cross-chain proof details
+     * GET /api/verify/proof/:documentHash
+     */
+    async getCrossChainProof(req, res) {
+        try {
+            const { documentHash } = req.params;
+
+            if (!documentHash) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Document hash is required'
+                });
+            }
+
+            const db = require('../database/models');
+            const proof = await db.sequelize.query(
+                `SELECT * FROM cross_chain_proofs WHERE document_hash = :hash ORDER BY created_at DESC LIMIT 1`,
+                { 
+                    replacements: { hash: documentHash.replace('0x', '') },
+                    type: db.sequelize.QueryTypes.SELECT 
+                }
+            );
+
+            if (!proof || proof.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'No cross-chain proof found'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: proof[0]
+            });
+
+        } catch (error) {
+            logger.error('Failed to get cross-chain proof:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = new PublicVerificationController();

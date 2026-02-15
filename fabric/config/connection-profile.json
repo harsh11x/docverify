@@ -1,0 +1,179 @@
+{
+  "name": "docverify-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "Org1",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        },
+        "orderer": "300"
+      }
+    }
+  },
+  "channels": {
+    "verification-channel": {
+      "orderers": [
+        "orderer.docverify.network",
+        "orderer2.docverify.network",
+        "orderer3.docverify.network"
+      ],
+      "peers": {
+        "peer0.org1.docverify.network": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        },
+        "peer1.org1.docverify.network": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": false
+        },
+        "peer0.org2.docverify.network": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        },
+        "peer0.org3.docverify.network": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        }
+      }
+    }
+  },
+  "organizations": {
+    "Org1": {
+      "mspid": "Org1MSP",
+      "peers": [
+        "peer0.org1.docverify.network",
+        "peer1.org1.docverify.network"
+      ],
+      "certificateAuthorities": [
+        "ca.org1.docverify.network"
+      ]
+    },
+    "Org2": {
+      "mspid": "Org2MSP",
+      "peers": [
+        "peer0.org2.docverify.network"
+      ],
+      "certificateAuthorities": [
+        "ca.org2.docverify.network"
+      ]
+    },
+    "Org3": {
+      "mspid": "Org3MSP",
+      "peers": [
+        "peer0.org3.docverify.network"
+      ],
+      "certificateAuthorities": [
+        "ca.org3.docverify.network"
+      ]
+    }
+  },
+  "orderers": {
+    "orderer.docverify.network": {
+      "url": "grpcs://orderer.docverify.network:7050",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/ordererOrganizations/docverify.network/tlsca/tlsca.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer.docverify.network"
+      }
+    },
+    "orderer2.docverify.network": {
+      "url": "grpcs://orderer2.docverify.network:8050",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/ordererOrganizations/docverify.network/tlsca/tlsca.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer2.docverify.network"
+      }
+    },
+    "orderer3.docverify.network": {
+      "url": "grpcs://orderer3.docverify.network:9050",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/ordererOrganizations/docverify.network/tlsca/tlsca.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer3.docverify.network"
+      }
+    }
+  },
+  "peers": {
+    "peer0.org1.docverify.network": {
+      "url": "grpcs://peer0.org1.docverify.network:7051",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org1.docverify.network/tlsca/tlsca.org1.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.org1.docverify.network"
+      }
+    },
+    "peer1.org1.docverify.network": {
+      "url": "grpcs://peer1.org1.docverify.network:8051",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org1.docverify.network/tlsca/tlsca.org1.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer1.org1.docverify.network"
+      }
+    },
+    "peer0.org2.docverify.network": {
+      "url": "grpcs://peer0.org2.docverify.network:9051",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org2.docverify.network/tlsca/tlsca.org2.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.org2.docverify.network"
+      }
+    },
+    "peer0.org3.docverify.network": {
+      "url": "grpcs://peer0.org3.docverify.network:11051",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org3.docverify.network/tlsca/tlsca.org3.docverify.network-cert.pem"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.org3.docverify.network"
+      }
+    }
+  },
+  "certificateAuthorities": {
+    "ca.org1.docverify.network": {
+      "url": "https://ca.org1.docverify.network:7054",
+      "caName": "ca-org1",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org1.docverify.network/ca/ca.org1.docverify.network-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca.org2.docverify.network": {
+      "url": "https://ca.org2.docverify.network:8054",
+      "caName": "ca-org2",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org2.docverify.network/ca/ca.org2.docverify.network-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca.org3.docverify.network": {
+      "url": "https://ca.org3.docverify.network:9054",
+      "caName": "ca-org3",
+      "tlsCACerts": {
+        "path": "/fabric/crypto/peerOrganizations/org3.docverify.network/ca/ca.org3.docverify.network-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    }
+  }
+}

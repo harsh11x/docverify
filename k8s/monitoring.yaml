@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: docverify-backend-monitor
+  namespace: docverify
+  labels:
+    app: docverify
+spec:
+  selector:
+    matchLabels:
+      app: docverify
+      component: backend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docverify-alerts
+  namespace: docverify
+data:
+  alerts.yaml: |
+    groups:
+    - name: docverify-alerts
+      rules:
+      - alert: DocVerifyBackendDown
+        expr: up{job="docverify-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: DocVerify backend is down
+          description: DocVerify backend has been down for more than 1 minute
+      
+      - alert: DocVerifyHighErrorRate
+        expr: rate(http_requests_total{job="docverify-backend",status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High error rate detected
+          description: Error rate is above 10% for the last 5 minutes
+      
+      - alert: DocVerifyHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="docverify-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High latency detected
+          description: 95th percentile latency is above 2 seconds
+      
+      - alert: DocVerifyDatabaseConnectionFailure
+        expr: docverify_database_connection_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Database connection failure
+          description: Cannot connect to PostgreSQL database
+      
+      - alert: DocVerifyEthereumSyncLag
+        expr: docverify_ethereum_sync_lag_blocks > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ethereum sync lagging
+          description: Ethereum block sync is more than 100 blocks behind
+      
+      - alert: DocVerifyBatchAnchorQueueBacklog
+        expr: docverify_batch_anchor_queue_pending > 1000
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Batch anchor queue backlog
+          description: More than 1000 items pending in batch anchor queue
+      
+      - alert: DocVerifyIPFSConnectionFailure
+        expr: docverify_ipfs_connection_status == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: IPFS connection failure
+          description: Cannot connect to IPFS node
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: docverify
+data:
+  docverify-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "DocVerify Infrastructure",
+        "panels": [
+          {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job=\"docverify-backend\"}[5m])"
+              }
+            ]
+          },
+          {
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_requests_total{job=\"docverify-backend\",status=~\"5..\"}[5m])"
+              }
+            ]
+          },
+          {
+            "title": "Verification Count",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "docverify_verifications_total"
+              }
+            ]
+          },
+          {
+            "title": "Batch Anchor Queue",
+            "type": "gauge",
+            "targets": [
+              {
+                "expr": "docverify_batch_anchor_queue_pending"
+              }
+            ]
+          }
+        ]
+      }
+    }

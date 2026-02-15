@@ -38,4 +38,18 @@ router.get(
     publicVerificationController.downloadCertificate.bind(publicVerificationController)
 );
 
+// Get verification history
+router.get(
+    '/history/:documentHash',
+    rateLimiter.publicVerification,
+    publicVerificationController.getVerificationHistory.bind(publicVerificationController)
+);
+
+// Get cross-chain proof
+router.get(
+    '/proof/:documentHash',
+    rateLimiter.publicVerification,
+    publicVerificationController.getCrossChainProof.bind(publicVerificationController)
+);
+
 module.exports = router;

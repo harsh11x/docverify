@@ -1,0 +1,156 @@
+{
+  "description": "DocVerify Multi-Node Endorsement Policies",
+  "version": "1.0.0",
+  
+  "policies": {
+    "certificate_issuance": {
+      "description": "Policy for issuing new certificates - requires endorsement from the issuing organization AND at least one other organization",
+      "policy": {
+        "identities": [
+          { "role": { "name": "peer", "mspId": "Org1MSP" } },
+          { "role": { "name": "peer", "mspId": "Org2MSP" } },
+          { "role": { "name": "peer", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "2-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "OutOf(2, 'Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')"
+    },
+    
+    "certificate_revocation": {
+      "description": "Policy for revoking certificates - requires endorsement from the issuing organization only",
+      "policy": {
+        "identities": [
+          { "role": { "name": "peer", "mspId": "Org1MSP" } },
+          { "role": { "name": "peer", "mspId": "Org2MSP" } },
+          { "role": { "name": "peer", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "1-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "OR('Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')"
+    },
+    
+    "certificate_verification": {
+      "description": "Policy for verification queries - any organization can query",
+      "policy": {
+        "identities": [
+          { "role": { "name": "member", "mspId": "Org1MSP" } },
+          { "role": { "name": "member", "mspId": "Org2MSP" } },
+          { "role": { "name": "member", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "1-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')"
+    },
+    
+    "organization_registration": {
+      "description": "Policy for registering new organizations - requires majority endorsement",
+      "policy": {
+        "identities": [
+          { "role": { "name": "admin", "mspId": "Org1MSP" } },
+          { "role": { "name": "admin", "mspId": "Org2MSP" } },
+          { "role": { "name": "admin", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "2-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "OutOf(2, 'Org1MSP.admin', 'Org2MSP.admin', 'Org3MSP.admin')"
+    },
+    
+    "governance_proposal": {
+      "description": "Policy for governance proposals - requires unanimous endorsement for critical operations",
+      "policy": {
+        "identities": [
+          { "role": { "name": "admin", "mspId": "Org1MSP" } },
+          { "role": { "name": "admin", "mspId": "Org2MSP" } },
+          { "role": { "name": "admin", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "3-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "AND('Org1MSP.admin', 'Org2MSP.admin', 'Org3MSP.admin')"
+    },
+    
+    "cross_chain_anchor": {
+      "description": "Policy for cross-chain anchoring operations - requires 2 of 3 organizations",
+      "policy": {
+        "identities": [
+          { "role": { "name": "peer", "mspId": "Org1MSP" } },
+          { "role": { "name": "peer", "mspId": "Org2MSP" } },
+          { "role": { "name": "peer", "mspId": "Org3MSP" } }
+        ],
+        "policy": {
+          "2-of": [
+            { "signed-by": 0 },
+            { "signed-by": 1 },
+            { "signed-by": 2 }
+          ]
+        }
+      },
+      "signature_policy": "OutOf(2, 'Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')"
+    }
+  },
+  
+  "chaincode_endorsement": {
+    "default": "OutOf(2, 'Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')",
+    "lifecycle": "MAJORITY Endorsement",
+    
+    "function_specific": {
+      "issueCertificate": "OutOf(2, 'Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')",
+      "updateCertificateStatus": "OR('Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')",
+      "validateCertificateHash": "OR('Org1MSP.peer', 'Org2MSP.peer', 'Org3MSP.peer')",
+      "queryCertificateByHash": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')",
+      "getCertificate": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')",
+      "getCertificateHistory": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')",
+      "queryCertificatesByOrganization": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')"
+    }
+  },
+  
+  "collection_policies": {
+    "privateOrgData": {
+      "description": "Private data collection for organization-specific data",
+      "policy": "OR('Org1MSP.member', 'Org2MSP.member', 'Org3MSP.member')",
+      "requiredPeerCount": 1,
+      "maxPeerCount": 3,
+      "blockToLive": 0,
+      "memberOnlyRead": true,
+      "memberOnlyWrite": true
+    },
+    "certificatePrivateDetails": {
+      "description": "Private certificate details only accessible by issuing org",
+      "policy": "OR('Org1MSP.member')",
+      "requiredPeerCount": 1,
+      "maxPeerCount": 2,
+      "blockToLive": 0,
+      "memberOnlyRead": true,
+      "memberOnlyWrite": true
+    }
+  }
+}

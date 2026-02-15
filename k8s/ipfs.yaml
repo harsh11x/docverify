@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ipfs-pvc
+  namespace: docverify
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ipfs
+  namespace: docverify
+spec:
+  serviceName: ipfs-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipfs
+  template:
+    metadata:
+      labels:
+        app: ipfs
+    spec:
+      containers:
+      - name: ipfs
+        image: ipfs/kubo:latest
+        ports:
+        - containerPort: 4001
+          name: swarm
+        - containerPort: 5001
+          name: api
+        - containerPort: 8080
+          name: gateway
+        env:
+        - name: IPFS_PROFILE
+          value: "server"
+        volumeMounts:
+        - name: ipfs-storage
+          mountPath: /data/ipfs
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/v0/id
+            port: 5001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/v0/id
+            port: 5001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ipfs-storage
+        persistentVolumeClaim:
+          claimName: ipfs-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-service
+  namespace: docverify
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5001
+    targetPort: 5001
+    name: api
+  selector:
+    app: ipfs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-gateway-service
+  namespace: docverify
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: gateway
+  selector:
+    app: ipfs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-swarm-service
+  namespace: docverify
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 4001
+    targetPort: 4001
+    name: swarm
+  selector:
+    app: ipfs

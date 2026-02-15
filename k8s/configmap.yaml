@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docverify-config
+  namespace: docverify
+data:
+  NODE_ENV: "production"
+  PORT: "5000"
+  
+  # Database
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "docverify"
+  DB_POOL_MIN: "5"
+  DB_POOL_MAX: "20"
+  
+  # IPFS
+  IPFS_HOST: "ipfs-service"
+  IPFS_PORT: "5001"
+  IPFS_PROTOCOL: "http"
+  IPFS_GATEWAY: "http://ipfs-gateway-service:8080"
+  
+  # Redis
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  
+  # Ethereum (use appropriate network)
+  ETHEREUM_NETWORK: "sepolia"
+  ETHEREUM_RPC_URL: "https://sepolia.infura.io/v3/YOUR_KEY"
+  ETHEREUM_CHAIN_ID: "11155111"
+  GAS_LIMIT: "3000000"
+  
+  # Fabric
+  FABRIC_CHANNEL_NAME: "verification-channel"
+  FABRIC_CHAINCODE_NAME: "certificate-chaincode"
+  FABRIC_MSP_ID: "Org1MSP"
+  
+  # Rate Limiting
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  
+  # Security
+  NONCE_EXPIRATION: "300000"
+  REQUEST_MAX_AGE: "300000"
+  VERIFY_CID_CONTENT: "true"
+  
+  # Batch Anchoring
+  BATCH_ANCHOR_ENABLED: "true"
+  BATCH_ANCHOR_INTERVAL: "3600000"
+  BATCH_ANCHOR_SIZE: "100"
+  
+  # Sync Engine
+  ETHEREUM_SYNC_INTERVAL: "30000"
+  FABRIC_SYNC_INTERVAL: "30000"
+  INSTITUTIONAL_SYNC_INTERVAL: "60000"
+  
+  # Governance
+  GOVERNANCE_VOTING_PERIOD: "604800000"
+  GOVERNANCE_AUTO_APPROVE: "false"
+  CONSENSUS_THRESHOLD: "2"
+  
+  # Logging
+  LOG_LEVEL: "info"
+  
+  # CORS
+  ALLOWED_ORIGINS: "https://docverify.example.com,https://admin.docverify.example.com"
