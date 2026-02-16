@@ -11,22 +11,24 @@ export function SiteHeader() {
 
     return (
         <>
-            <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <header className="sticky top-0 z-40 w-full border-b border-border/50 glass">
                 <div className="flex h-16 items-center justify-between px-6 max-w-7xl mx-auto">
                     <div className="flex items-center gap-6">
-                        <Link href="/" className="flex items-center gap-2">
-                            <Shield className="h-6 w-6 text-primary" />
-                            <span className="font-bold text-lg">DocVerify</span>
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-blockchain flex items-center justify-center transition-transform group-hover:scale-110">
+                                <Shield className="h-5 w-5 text-white" />
+                            </div>
+                            <span className="font-bold text-lg tracking-tight">DocVerify</span>
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                            <Link href="/verify" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <Link href="/verify" className="text-muted-foreground hover:text-primary transition-colors">
                                 Verify
                             </Link>
-                            <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
                                 Features
                             </Link>
-                            <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">
                                 Network
                             </Link>
                         </nav>
@@ -44,7 +46,7 @@ export function SiteHeader() {
 
                         <button
                             onClick={() => setIsJoinOpen(true)}
-                            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all hover:shadow-lg shadow-primary/20"
                         >
                             Sign Up
                         </button>

@@ -59,6 +59,15 @@ export default {
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
             },
+            animation: {
+                "accordion-down": "accordion-down 0.2s ease-out",
+                "accordion-up": "accordion-up 0.2s ease-out",
+                "pulse-slow": "pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                "slide-in": "slide-in 0.3s ease-out",
+                "fade-in": "fade-in 0.5s ease-out",
+                "float": "float 6s ease-in-out infinite",
+                "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+            },
             keyframes: {
                 "accordion-down": {
                     from: { height: "0" },
@@ -77,16 +86,17 @@ export default {
                     to: { transform: "translateX(0)" },
                 },
                 "fade-in": {
-                    from: { opacity: "0" },
-                    to: { opacity: "1" },
+                    from: { opacity: "0", transform: "translateY(10px)" },
+                    to: { opacity: "1", transform: "translateY(0)" },
                 },
-            },
-            animation: {
-                "accordion-down": "accordion-down 0.2s ease-out",
-                "accordion-up": "accordion-up 0.2s ease-out",
-                "pulse-slow": "pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                "slide-in": "slide-in 0.3s ease-out",
-                "fade-in": "fade-in 0.3s ease-out",
+                "float": {
+                    "0%, 100%": { transform: "translateY(0)" },
+                    "50%": { transform: "translateY(-10px)" },
+                },
+                "pulse-glow": {
+                    "0%, 100%": { opacity: "1", boxShadow: "0 0 20px rgba(59, 130, 246, 0.5)" },
+                    "50%": { opacity: "0.5", boxShadow: "0 0 10px rgba(59, 130, 246, 0.2)" },
+                },
             },
             backgroundImage: {
                 "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

@@ -12,9 +12,9 @@ interface NavbarProps {
 }
 
 const roleBadges = {
-    user: { label: "User", color: "bg-blue-500/20 text-blue-500 border-blue-500/30" },
-    organization: { label: "Organization", color: "bg-purple-500/20 text-purple-500 border-purple-500/30" },
-    governance: { label: "Governance", color: "bg-amber-500/20 text-amber-500 border-amber-500/30" },
+    user: { label: "User", color: "bg-primary/10 text-primary border-primary/20" },
+    organization: { label: "Organization", color: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
+    governance: { label: "Governance", color: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
 }
 
 export function Navbar({ role = "user", className }: NavbarProps) {
@@ -23,7 +23,7 @@ export function Navbar({ role = "user", className }: NavbarProps) {
     return (
         <nav
             className={cn(
-                "sticky top-0 z-30 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+                "sticky top-0 z-30 w-full border-b border-border/50 glass",
                 className
             )}
         >
@@ -35,7 +35,7 @@ export function Navbar({ role = "user", className }: NavbarProps) {
                 <div className="flex items-center gap-4">
                     <span
                         className={cn(
-                            "px-3 py-1 rounded-full text-xs font-medium border",
+                            "px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-sm",
                             badge.color
                         )}
                     >
