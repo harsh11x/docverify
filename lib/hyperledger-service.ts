@@ -95,7 +95,7 @@ class HyperledgerService {
             blockHeight: 0,
             consensusProof: false,
             syncProgress: 0,
-            status: "degraded",
+            status: "error",
         }
     }
 }

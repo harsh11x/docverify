@@ -38,7 +38,7 @@ class BlockchainService {
                 uploadedBy: v.organizationId || "",
                 organizationId: v.organizationId || "",
                 organizationName: v.organizationName || v.organizationId || "",
-                status: v.verified ? "verified" : "failed",
+                status: v.verified ? "verified" : "rejected",
                 blockNumber: v.blockNumber || 0,
                 transactionHash: v.transactionHash || "",
                 timestamp: v.timestamp ? new Date(v.timestamp) : new Date(),
