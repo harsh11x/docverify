@@ -5,7 +5,7 @@ require("dotenv").config();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
     solidity: {
-        version: "0.8.20",
+        version: "0.8.24",
         settings: {
             optimizer: {
                 enabled: true,
@@ -45,8 +45,8 @@ module.exports = {
         coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     },
     paths: {
-        sources: "./contracts/ethereum",
-        tests: "./tests/unit/contracts",
+        sources: "./contracts",
+        tests: "./tests",
         cache: "./cache",
         artifacts: "./artifacts",
     },

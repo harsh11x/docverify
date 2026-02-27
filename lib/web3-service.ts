@@ -1,5 +1,6 @@
-// Mock Web3 service for wallet connection and blockchain interactions
-// Replace with actual Web3.js or Ethers.js implementation
+/**
+ * Web3 service — MetaMask / ethers.js wallet integration.
+ */
 
 export interface WalletConnection {
     address: string
@@ -14,43 +15,109 @@ export interface NetworkInfo {
     blockNumber: number
 }
 
+declare global {
+    interface Window {
+        ethereum?: any
+    }
+}
+
 class Web3Service {
     private connected: boolean = false
     private currentAddress: string | null = null
+    private chainId: number = 0
 
+    /**
+     * Connect wallet via MetaMask (window.ethereum).
+     * Falls back to a read-only mock if MetaMask is not installed.
+     */
     async connectWallet(): Promise<WalletConnection> {
-        // Mock implementation - replace with actual MetaMask connection
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                this.connected = true
-                this.currentAddress = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-                resolve({
-                    address: this.currentAddress,
-                    chainId: 1,
-                    balance: "1.5432",
-                    isConnected: true,
+        if (typeof window !== "undefined" && window.ethereum) {
+            try {
+                // Request account access
+                const accounts: string[] = await window.ethereum.request({
+                    method: "eth_requestAccounts",
                 })
-            }, 1000)
-        })
+
+                this.currentAddress = accounts[0]
+                this.connected = true
+
+                // Get chain ID
+                const chainIdHex: string = await window.ethereum.request({
+                    method: "eth_chainId",
+                })
+                this.chainId = parseInt(chainIdHex, 16)
+
+                // Get balance
+                const balanceHex: string = await window.ethereum.request({
+                    method: "eth_getBalance",
+                    params: [this.currentAddress, "latest"],
+                })
+                const balanceWei = BigInt(balanceHex)
+                const balanceEth = (Number(balanceWei) / 1e18).toFixed(4)
+
+                // Listen for account/chain changes
+                window.ethereum.on("accountsChanged", (accts: string[]) => {
+                    this.currentAddress = accts[0] || null
+                    this.connected = !!accts[0]
+                })
+                window.ethereum.on("chainChanged", (newChainId: string) => {
+                    this.chainId = parseInt(newChainId, 16)
+                    window.location.reload()
+                })
+
+                return {
+                    address: this.currentAddress!,
+                    chainId: this.chainId,
+                    balance: balanceEth,
+                    isConnected: true,
+                }
+            } catch (err: any) {
+                console.error("[Web3Service] connectWallet error:", err)
+                throw new Error(err.message || "Failed to connect wallet")
+            }
+        }
+
+        // Fallback: no MetaMask — return unconnected state
+        console.warn("[Web3Service] No MetaMask found. Install MetaMask to connect a wallet.")
+        throw new Error("MetaMask not found. Please install MetaMask browser extension.")
     }
 
     async disconnectWallet(): Promise<void> {
         this.connected = false
         this.currentAddress = null
+        this.chainId = 0
     }
 
     async getNetwork(): Promise<NetworkInfo> {
-        // Mock implementation
-        return {
-            chainId: 1,
-            name: "Ethereum Mainnet",
-            blockNumber: 18234567,
+        if (typeof window !== "undefined" && window.ethereum) {
+            const chainIdHex: string = await window.ethereum.request({ method: "eth_chainId" })
+            const chainId = parseInt(chainIdHex, 16)
+            const blockHex: string = await window.ethereum.request({ method: "eth_blockNumber" })
+            const blockNumber = parseInt(blockHex, 16)
+
+            const names: Record<number, string> = {
+                1: "Ethereum Mainnet",
+                11155111: "Sepolia Testnet",
+                31337: "Hardhat Local",
+                1337: "Ganache Local",
+            }
+
+            return {
+                chainId,
+                name: names[chainId] || `Chain ${chainId}`,
+                blockNumber,
+            }
         }
+        return { chainId: 0, name: "Unknown", blockNumber: 0 }
     }
 
     async switchNetwork(chainId: number): Promise<void> {
-        // Mock implementation
-        console.log(`Switching to network ${chainId}`)
+        if (typeof window !== "undefined" && window.ethereum) {
+            await window.ethereum.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x" + chainId.toString(16) }],
+            })
+        }
     }
 
     isConnected(): boolean {
@@ -62,25 +129,32 @@ class Web3Service {
     }
 
     async submitTransaction(data: any): Promise<string> {
-        // Mock transaction submission
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve("0x" + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2))
-            }, 2000)
-        })
+        if (!this.connected || !this.currentAddress) {
+            throw new Error("Wallet not connected")
+        }
+        if (typeof window !== "undefined" && window.ethereum) {
+            const txHash: string = await window.ethereum.request({
+                method: "eth_sendTransaction",
+                params: [{ from: this.currentAddress, ...data }],
+            })
+            return txHash
+        }
+        throw new Error("MetaMask not available")
     }
 
     async waitForTransaction(txHash: string): Promise<any> {
-        // Mock transaction confirmation
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    hash: txHash,
-                    blockNumber: 18234567,
-                    status: 1,
+        // Poll for receipt
+        if (typeof window !== "undefined" && window.ethereum) {
+            for (let i = 0; i < 30; i++) {
+                const receipt = await window.ethereum.request({
+                    method: "eth_getTransactionReceipt",
+                    params: [txHash],
                 })
-            }, 3000)
-        })
+                if (receipt) return receipt
+                await new Promise((r) => setTimeout(r, 2000))
+            }
+        }
+        throw new Error("Transaction receipt not found after timeout")
     }
 }
 

@@ -1,6 +1,6 @@
 const { ethers } = require('ethers');
 const logger = require('../utils/logger');
-const DocumentVerificationABI = require('../../contracts/ethereum/artifacts/contracts/ethereum/DocumentVerification.sol/DocumentVerification.json');
+const DocumentVerificationABI = require('../../contracts/ethereum/artifacts/contracts/DocumentVerification.sol/DocumentVerification.json');
 
 class EthereumService {
     constructor() {

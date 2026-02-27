@@ -1,4 +1,3 @@
-```
 const { PDFDocument, rgb, StandardFonts, degrees } = require('pdf-lib');
 const logger = require('../utils/logger');
 const axios = require('axios');
@@ -29,7 +28,7 @@ class PDFService {
             for (const field of structure) {
                 const value = data[field.name] || '';
                 const fontSize = field.fontSize || 12;
-                
+
                 firstPage.drawText(String(value), {
                     x: field.x,
                     y: field.y,
@@ -44,7 +43,7 @@ class PDFService {
             const watermarkText = 'Verified by DocVerify';
             const watermarkSize = 50;
             const textWidth = boldFont.widthOfTextAtSize(watermarkText, watermarkSize);
-            
+
             firstPage.drawText(watermarkText, {
                 x: width / 2 - textWidth / 2,
                 y: height / 2,
@@ -57,7 +56,7 @@ class PDFService {
 
             // 3. Add Certificate ID (Bottom Left)
             if (certificateId) {
-                const idText = `Certificate ID: ${ certificateId } `;
+                const idText = `Certificate ID: ${certificateId} `;
                 firstPage.drawText(idText, {
                     x: 50,
                     y: 50,
@@ -81,7 +80,7 @@ class PDFService {
                         width: 100,
                         height: 100,
                     });
-                     
+
                     // Add "Scan to Verify" text below QR
                     firstPage.drawText('Scan to Verify', {
                         x: width - 135,
@@ -116,7 +115,7 @@ class PDFService {
             const response = await axios.get(url, { responseType: 'arraybuffer' });
             return Buffer.from(response.data);
         } catch (error) {
-            logger.error(`Failed to fetch PDF from ${ url }: `, error);
+            logger.error(`Failed to fetch PDF from ${url}: `, error);
             throw error;
         }
     }

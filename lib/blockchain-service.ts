@@ -1,63 +1,165 @@
-// Mock blockchain service for document verification
-// Replace with actual smart contract interaction
+/**
+ * Blockchain service — calls the DocVerify backend API.
+ * Backend routes: /api/verify, /api/documents, /api/governance, /api/sync
+ */
 
 import { Document, VerificationStatus } from "@/types"
 
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+
 class BlockchainService {
+    /**
+     * Verify a document by its SHA-256 hash.
+     */
     async verifyDocument(hash: string): Promise<Document | null> {
-        // Mock implementation - replace with actual smart contract call
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // Simulate verification
-                if (Math.random() > 0.3) {
-                    resolve({
-                        id: Math.random().toString(36).substring(7),
-                        hash,
-                        ipfsCid: "Qm" + Math.random().toString(36).substring(2, 15),
-                        fileName: "verified_document.pdf",
-                        fileSize: 245760,
-                        uploadedBy: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-                        organizationId: "org1",
-                        organizationName: "Stanford University",
-                        status: "verified",
-                        blockNumber: 18234567,
-                        transactionHash: "0x9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a",
-                        timestamp: new Date(),
-                    })
-                } else {
-                    resolve(null)
-                }
-            }, 1500)
-        })
+        try {
+            const res = await fetch(`${API_BASE}/api/verify`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hash }),
+            })
+
+            if (!res.ok) {
+                if (res.status === 404) return null
+                throw new Error(`Verification failed: ${res.statusText}`)
+            }
+
+            const data = await res.json()
+
+            if (!data.success || !data.data?.verified) return null
+
+            const v = data.data
+            return {
+                id: v.certificateId || v.documentHash,
+                hash: v.documentHash || hash,
+                ipfsCid: v.ipfsCID || "",
+                fileName: v.metadata?.fileName || "document",
+                fileSize: v.metadata?.fileSize || 0,
+                uploadedBy: v.organizationId || "",
+                organizationId: v.organizationId || "",
+                organizationName: v.organizationName || v.organizationId || "",
+                status: v.verified ? "verified" : "failed",
+                blockNumber: v.blockNumber || 0,
+                transactionHash: v.transactionHash || "",
+                timestamp: v.timestamp ? new Date(v.timestamp) : new Date(),
+            }
+        } catch (err) {
+            console.error("[BlockchainService] verifyDocument error:", err)
+            return null
+        }
     }
 
+    /**
+     * Verify a document by IPFS CID.
+     */
+    async verifyByCID(cid: string): Promise<Document | null> {
+        try {
+            const res = await fetch(`${API_BASE}/api/verify/cid`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ cid }),
+            })
+            if (!res.ok) return null
+            const data = await res.json()
+            if (!data.success) return null
+            return data.data as Document
+        } catch (err) {
+            console.error("[BlockchainService] verifyByCID error:", err)
+            return null
+        }
+    }
+
+    /**
+     * Verify a document by certificate ID.
+     */
+    async verifyByCertId(certId: string): Promise<Document | null> {
+        try {
+            const res = await fetch(`${API_BASE}/api/verify/cert-id`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ certId }),
+            })
+            if (!res.ok) return null
+            const data = await res.json()
+            if (!data.success) return null
+            return data.data as Document
+        } catch (err) {
+            console.error("[BlockchainService] verifyByCertId error:", err)
+            return null
+        }
+    }
+
+    /**
+     * Submit a document for verification (upload hash + IPFS CID).
+     * Returns the Ethereum transaction hash.
+     */
     async submitDocument(hash: string, ipfsCid: string): Promise<string> {
-        // Mock implementation - replace with actual smart contract call
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve("0x" + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2))
-            }, 2000)
+        const res = await fetch(`${API_BASE}/api/documents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ hash, ipfsCid }),
         })
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: res.statusText }))
+            throw new Error(err.error || "Document submission failed")
+        }
+
+        const data = await res.json()
+        return data.transactionHash || data.data?.transactionHash || ""
     }
 
+    /**
+     * Register a new organization via the governance API.
+     * Returns a transaction hash or org ID.
+     */
     async registerOrganization(name: string, type: string): Promise<string> {
-        // Mock implementation
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve("0x" + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2))
-            }, 2000)
+        const res = await fetch(`${API_BASE}/api/governance/organizations/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, orgType: type }),
         })
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ error: res.statusText }))
+            throw new Error(err.error || "Organization registration failed")
+        }
+
+        const data = await res.json()
+        return data.orgId || data.data?.orgId || ""
     }
 
-    async getDocumentsByAddress(address: string): Promise<Document[]> {
-        // Mock implementation
-        return []
+    /**
+     * Get verification history for a given document hash.
+     */
+    async getVerificationHistory(hash: string): Promise<Document[]> {
+        try {
+            const res = await fetch(`${API_BASE}/api/verify/history/${hash}`)
+            if (!res.ok) return []
+            const data = await res.json()
+            return data.data || []
+        } catch {
+            return []
+        }
     }
 
-    // Listen to smart contract events
+    /**
+     * Get cross-chain proof for a given document hash.
+     */
+    async getCrossChainProof(hash: string): Promise<any | null> {
+        try {
+            const res = await fetch(`${API_BASE}/api/verify/proof/${hash}`)
+            if (!res.ok) return null
+            const data = await res.json()
+            return data.data || null
+        } catch {
+            return null
+        }
+    }
+
+    /** Listen to backend sync events (no-op stub — use WebSocket if needed) */
     onDocumentVerified(callback: (data: any) => void): void {
-        // Mock event listener
-        console.log("Listening for document verification events")
+        console.log("[BlockchainService] Real-time events: connect to ws://localhost:5000 for updates")
     }
 }
 
